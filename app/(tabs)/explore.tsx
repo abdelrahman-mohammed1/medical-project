@@ -1,25 +1,26 @@
 // src/screens/AddMedicationScreen.js
-import React, { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
+import * as Notifications from "expo-notifications";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  Platform,
+  View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as Notifications from "expo-notifications";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
 
+import { useMedications } from "../../context/DatabaseContext";
 import { insertMedication } from "../../database/db";
 import { scheduleMedicationReminder } from "../../services/notificationService";
-import { useMedications } from "../../context/DatabaseContext";
+import { router } from "expo-router";
 
 export default function AddMedicationScreen() {
   const { loadMedications } = useMedications();
@@ -115,6 +116,11 @@ export default function AddMedicationScreen() {
       Alert.alert("Validation", "Please enter a medication name.");
       return;
     }
+    
+    if (!description.trim()) {
+      Alert.alert("Validation", "Please enter a description.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -147,16 +153,19 @@ export default function AddMedicationScreen() {
 
       await loadMedications();
 
-      Alert.alert(
-        "✅ Saved!",
-        `${name} added.\nReminder set for ${formatTime(notifyTime)}.\n\nYou'll get a test notification in 5 seconds!`,
-      );
-
       // Reset form
       setName("");
       setDescription("");
       setImageUri(null);
       setNotifyTime(new Date());
+
+      // Navigate to medications list
+      router.push("/(tabs)/");
+
+      Alert.alert(
+        "✅ Saved!",
+        `${name} added successfully!\nReminder set for ${formatTime(notifyTime)}.`,
+      );
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save medication. Please try again.");
@@ -205,7 +214,7 @@ export default function AddMedicationScreen() {
 
       {/* Description */}
       <View style={styles.fieldGroup}>
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>Description *</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Usage instructions, dosage notes..."
