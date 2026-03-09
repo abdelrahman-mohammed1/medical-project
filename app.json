@@ -17,7 +17,8 @@
         "foregroundImage": "./assets/images/app_icon_1773011981123.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.abdelrahman_mohamed123.MedicationApp"
     },
     "web": {
       "output": "static",
@@ -38,12 +39,27 @@
           }
         }
       ],
+      [
+        "expo-notifications",
+        {
+          "color": "#4F8EF7",
+          "defaultChannel": "medication",
+          "androidMode": "default",
+          "androidCollapsedTitle": "Medication Reminders"
+        }
+      ],
       "expo-sqlite",
       "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "edf32320-72b1-480d-9e50-e39bf6b198a4"
+      }
     }
   }
 }
