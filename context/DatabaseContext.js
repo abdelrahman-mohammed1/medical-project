@@ -12,6 +12,7 @@ import {
   insertMedication,
   searchMedications,
   updateMedication,
+  updateMedicationImage,
   updateMedicationReminder,
 } from "../database/db";
 import {
@@ -52,13 +53,12 @@ export const DatabaseProvider = ({ children }) => {
         console.error("Search failed:", error);
       }
     },
-    [loadMedications]
+    [loadMedications],
   );
 
   // ── Add reminder (works for ALL medications) ────────────────────────────────
   const addReminder = useCallback(async (id, brandName, timeString) => {
     try {
-      // Schedule notification
       let notifId = "";
       try {
         notifId = await scheduleMedicationReminder(brandName, timeString);
@@ -66,15 +66,14 @@ export const DatabaseProvider = ({ children }) => {
         console.warn("Notification scheduling failed:", e);
       }
 
-      await updateMedicationReminder(id, {
-        reminderTime: timeString,
-        notifId,
-      });
+      await updateMedicationReminder(id, { reminderTime: timeString, notifId });
 
       setMedications((prev) =>
         prev.map((m) =>
-          m.id === id ? { ...m, reminder_time: timeString, notif_id: notifId } : m
-        )
+          m.id === id
+            ? { ...m, reminder_time: timeString, notif_id: notifId }
+            : m,
+        ),
       );
       return true;
     } catch (error) {
@@ -90,37 +89,57 @@ export const DatabaseProvider = ({ children }) => {
       await updateMedicationReminder(id, { reminderTime: null, notifId: "" });
       setMedications((prev) =>
         prev.map((m) =>
-          m.id === id ? { ...m, reminder_time: null, notif_id: "" } : m
-        )
+          m.id === id ? { ...m, reminder_time: null, notif_id: "" } : m,
+        ),
       );
     } catch (error) {
       console.error("Failed to remove reminder:", error);
     }
   }, []);
 
-  // ── Add user medication ─────────────────────────────────────────────────────
-  const addMedication = useCallback(async (fields) => {
+  // ── Update image (works for ALL medications including defaults) ─────────────
+  const updateImage = useCallback(async (id, imageUri) => {
     try {
-      await insertMedication(fields);
-      await loadMedications();
+      await updateMedicationImage(id, imageUri);
+      setMedications((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, image_uri: imageUri } : m)),
+      );
       return true;
     } catch (error) {
-      console.error("Failed to add medication:", error);
+      console.error("Failed to update image:", error);
       return false;
     }
-  }, [loadMedications]);
+  }, []);
+
+  // ── Add user medication ─────────────────────────────────────────────────────
+  const addMedication = useCallback(
+    async (fields) => {
+      try {
+        await insertMedication(fields);
+        await loadMedications();
+        return true;
+      } catch (error) {
+        console.error("Failed to add medication:", error);
+        return false;
+      }
+    },
+    [loadMedications],
+  );
 
   // ── Update user medication (blocked for defaults in db layer) ───────────────
-  const editMedication = useCallback(async (id, fields) => {
-    try {
-      const changes = await updateMedication(id, fields);
-      if (changes > 0) await loadMedications();
-      return changes > 0;
-    } catch (error) {
-      console.error("Failed to update medication:", error);
-      return false;
-    }
-  }, [loadMedications]);
+  const editMedication = useCallback(
+    async (id, fields) => {
+      try {
+        const changes = await updateMedication(id, fields);
+        if (changes > 0) await loadMedications();
+        return changes > 0;
+      } catch (error) {
+        console.error("Failed to update medication:", error);
+        return false;
+      }
+    },
+    [loadMedications],
+  );
 
   // ── Delete user medication (blocked for defaults in db layer) ───────────────
   const removeMedication = useCallback(async (id, notifId) => {
@@ -153,6 +172,7 @@ export const DatabaseProvider = ({ children }) => {
         removeMedication,
         addReminder,
         removeReminder,
+        updateImage,
       }}
     >
       {children}
@@ -162,6 +182,7 @@ export const DatabaseProvider = ({ children }) => {
 
 export const useMedications = () => {
   const ctx = useContext(DatabaseContext);
-  if (!ctx) throw new Error("useMedications must be used inside DatabaseProvider");
+  if (!ctx)
+    throw new Error("useMedications must be used inside DatabaseProvider");
   return ctx;
 };

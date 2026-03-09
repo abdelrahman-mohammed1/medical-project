@@ -1,5 +1,5 @@
-import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
   return (
@@ -28,6 +28,15 @@ export default function TabLayout() {
           href: "/explore",
           tabBarIcon: ({ color }) => (
             <Ionicons name="add-circle" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="reminders"
+        options={{
+          title: "My Reminders",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="alarm" size={24} color={color} />
           ),
         }}
       />
