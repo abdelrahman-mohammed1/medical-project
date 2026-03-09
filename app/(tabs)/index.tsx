@@ -1,19 +1,20 @@
 // src/screens/MedicationsListScreen.js
-import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 import { useMedications } from "../../context/DatabaseContext";
 
 // Convert "HH:MM" to "h:mm AM/PM"
@@ -25,7 +26,7 @@ const formatTime = (timeStr) => {
 };
 
 // Single card component (memoised for performance)
-const MedicationCard = React.memo(({ item, onDelete }) => {
+const MedicationCard = React.memo(({ item, onDelete, onEdit }) => {
   const handleDelete = () => {
     Alert.alert(
       "Delete Medication",
@@ -39,6 +40,10 @@ const MedicationCard = React.memo(({ item, onDelete }) => {
         },
       ],
     );
+  };
+
+  const handleEdit = () => {
+    onEdit(item);
   };
 
   return (
@@ -70,14 +75,24 @@ const MedicationCard = React.memo(({ item, onDelete }) => {
         </View>
       </View>
 
-      {/* Delete */}
-      <TouchableOpacity
-        style={styles.deleteBtn}
-        onPress={handleDelete}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons name="trash-outline" size={20} color="#E53E3E" />
-      </TouchableOpacity>
+      {/* Actions */}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={handleEdit}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="pencil-outline" size={18} color="#4F8EF7" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={handleDelete}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="trash-outline" size={18} color="#E53E3E" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 });
@@ -108,6 +123,22 @@ export default function MedicationsListScreen() {
 
   const handleDelete = async (id, notifId) => {
     await removeMedication(id, notifId);
+  };
+
+  const handleEdit = (medication) => {
+    // Navigate to explore screen with medication data for editing
+    router.push({
+      pathname: "/(tabs)/explore",
+      params: {
+        editMode: "true",
+        medicationId: medication.id.toString(),
+        name: medication.name,
+        description: medication.description || "",
+        imageUri: medication.image_uri && medication.image_uri.trim() !== "" ? medication.image_uri : "null",
+        notifyTime: medication.notify_time,
+        notifId: medication.notif_id || "",
+      },
+    });
   };
 
   // ── Render helpers ─────────────────────────────────────────────────────
@@ -170,7 +201,11 @@ export default function MedicationsListScreen() {
           data={medications}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <MedicationCard item={item} onDelete={handleDelete} />
+            <MedicationCard
+              item={item}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
           )}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={
@@ -246,7 +281,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 
-  deleteBtn: { padding: 6, marginLeft: 8 },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editBtn: { padding: 6 },
+  deleteBtn: { padding: 6 },
 
   emptyState: {
     flex: 1,

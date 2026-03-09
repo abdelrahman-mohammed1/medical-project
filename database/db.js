@@ -60,7 +60,13 @@ export const insertMedication = async ({
   const result = await database.runAsync(
     `INSERT INTO medications (name, description, image_uri, notify_time, notif_id)
      VALUES (?, ?, ?, ?, ?)`,
-    [name, description || "", imageUri || "", notifyTime, notifId || ""],
+    [
+      name ?? null, 
+      description ?? "", 
+      imageUri ?? "", 
+      notifyTime ?? null, 
+      notifId ?? ""
+    ],
   );
   return result.lastInsertRowId;
 };
@@ -98,7 +104,7 @@ export const deleteMedication = async (id) => {
   const database = await getDatabase();
   const result = await database.runAsync(
     `DELETE FROM medications WHERE id = ?`,
-    [id],
+    [id ?? null],
   );
   return result.changes;
 };
@@ -110,7 +116,35 @@ export const deleteMedication = async (id) => {
 export const updateNotifId = async (id, notifId) => {
   const database = await getDatabase();
   await database.runAsync(`UPDATE medications SET notif_id = ? WHERE id = ?`, [
-    notifId,
-    id,
+    notifId ?? "",
+    id ?? null,
   ]);
+};
+
+/**
+ * Update a medication record.
+ * Returns the number of rows affected.
+ */
+export const updateMedication = async (id, {
+  name,
+  description,
+  imageUri,
+  notifyTime,
+  notifId,
+}) => {
+  const database = await getDatabase();
+  const result = await database.runAsync(
+    `UPDATE medications 
+     SET name = ?, description = ?, image_uri = ?, notify_time = ?, notif_id = ?
+     WHERE id = ?`,
+    [
+      name ?? null, 
+      description ?? "", 
+      imageUri ?? "", 
+      notifyTime ?? null, 
+      notifId ?? "", 
+      id ?? null
+    ],
+  );
+  return result.changes;
 };

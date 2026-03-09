@@ -4,7 +4,7 @@
     "slug": "MedicationApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app_icon_1773011981123.png",
     "scheme": "medicationapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,10 +13,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#173663",
+        "foregroundImage": "./assets/images/app_icon_1773011981123.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -30,12 +28,13 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/pill-placeholder.png",
-          "imageWidth": 200,
+          "image": "./assets/images/splash_screen_1773011993293.png",
+          "imageWidth": 800,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0A1628",
           "dark": {
-            "backgroundColor": "#000000"
+            "image": "./assets/images/splash_screen_1773011993293.png",
+            "backgroundColor": "#0A1628"
           }
         }
       ],

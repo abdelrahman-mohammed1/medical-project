@@ -17,20 +17,64 @@ import {
   View,
 } from "react-native";
 
+import { router, useLocalSearchParams } from "expo-router";
 import { useMedications } from "../../context/DatabaseContext";
-import { insertMedication } from "../../database/db";
-import { scheduleMedicationReminder } from "../../services/notificationService";
-import { router } from "expo-router";
+import { insertMedication, updateMedication } from "../../database/db";
+import { scheduleMedicationReminder, cancelMedicationReminder } from "../../services/notificationService";
 
 export default function AddMedicationScreen() {
   const { loadMedications } = useMedications();
+  const params = useLocalSearchParams();
+  
+  // Check if we're in edit mode
+  const isEditMode = params.editMode === "true";
+  const medicationId = params.medicationId ? parseInt(params.medicationId as string) : null;
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [imageUri, setImageUri] = useState(null);
-  const [notifyTime, setNotifyTime] = useState(new Date());
+  const [name, setName] = useState((params.name as string) || "");
+  const [description, setDescription] = useState((params.description as string) || "");
+  
+  // Fix image URI - handle empty string vs null properly
+  const initialImageUri = params.imageUri as string;
+  const [imageUri, setImageUri] = useState<string | null>(
+    initialImageUri && initialImageUri.trim() !== "" && initialImageUri !== "null" && initialImageUri !== "undefined" ? initialImageUri : null
+  );
+  
+  // Set default time to current time + 3 minutes or use existing time
+  const getDefaultTime = () => {
+    if (isEditMode && params.notifyTime) {
+      const [h, m] = (params.notifyTime as string).split(":").map(Number);
+      const date = new Date();
+      date.setHours(h, m, 0, 0);
+      return date;
+    }
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 3);
+    return now;
+  };
+  
+  const [notifyTime, setNotifyTime] = useState(getDefaultTime());
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Sync state when params change (e.g. editing a different medication)
+  useEffect(() => {
+    setName((params.name as string) || "");
+    setDescription((params.description as string) || "");
+    
+    const initialImg = params.imageUri as string;
+    setImageUri(
+      initialImg && initialImg.trim() !== "" && initialImg !== "null" && initialImg !== "undefined" ? initialImg : null
+    );
+    
+    setNotifyTime(getDefaultTime());
+  }, [
+    params.medicationId, 
+    params.editMode, 
+    params.name, 
+    params.description, 
+    params.imageUri, 
+    params.notifyTime
+  ]);
 
   // ── طلب إذن الـ Notifications عند فتح الصفحة ─────────────────────────────
   useEffect(() => {
@@ -48,38 +92,55 @@ export default function AddMedicationScreen() {
 
   // ── Image picker ──────────────────────────────────────────────────────────
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "Please allow access to your photo library.",
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission needed",
+          "Please allow access to your photo library.",
+        );
+        return;
+      }
+      
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: false,
+      });
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to select image. Please try again.");
     }
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow camera access.");
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Please allow camera access.");
+        return;
+      }
+      
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false, // Disabling this prevents Android from aggressively killing the app for memory (OOM)
+        aspect: [1, 1],
+        quality: 0.5, // Lower quality to save memory
+        base64: false,
+      });
+      
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
     }
   };
 
@@ -92,19 +153,19 @@ export default function AddMedicationScreen() {
   };
 
   // ── Time picker ───────────────────────────────────────────────────────────
-  const onTimeChange = (event, selectedDate) => {
+  const onTimeChange = (event: any, selectedDate?: Date) => {
     setShowPicker(Platform.OS === "ios");
     if (selectedDate) setNotifyTime(selectedDate);
   };
 
-  const formatTime = (date) =>
+  const formatTime = (date: Date) =>
     date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     });
 
-  const timeString = (date) => {
+  const timeString = (date: Date) => {
     const h = date.getHours().toString().padStart(2, "0");
     const m = date.getMinutes().toString().padStart(2, "0");
     return `${h}:${m}`;
@@ -129,27 +190,62 @@ export default function AddMedicationScreen() {
       // ✅ الـ Daily reminder الحقيقي
       const notifId = await scheduleMedicationReminder(name.trim(), tStr);
 
-      // 🧪 Test notification بعد 5 ثواني - احذفه بعد ما تتأكد إن كل حاجة شغالة
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "✅ Reminder Saved!",
-          body: `Daily reminder set for "${name}" at ${formatTime(notifyTime)}`,
-          sound: true,
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 5,
-          channelId: "medication",
-        },
-      });
+      if (isEditMode && medicationId) {
+        // Cancel old notification first if it exists
+        if (params.notifId && (params.notifId as string).trim() !== "") {
+          try {
+            await cancelMedicationReminder(params.notifId as string);
+          } catch (error) {
+            console.log("Could not cancel old notification:", error);
+          }
+        }
+        
+        // Update existing medication
+        const updateResult = await updateMedication(medicationId, {
+          name: name.trim(),
+          description: description.trim(),
+          imageUri: imageUri || "",
+          notifyTime: tStr,
+          notifId,
+        });
+        
+        if (updateResult > 0) {
+          Alert.alert(
+            "✅ Updated!",
+            `${name} updated successfully!\nReminder set for ${formatTime(notifyTime)}.`,
+          );
+        } else {
+          throw new Error("No rows were updated");
+        }
+      } else {
+        // Create new medication
+        // 🧪 Test notification بعد 5 ثواني - احذفه بعد ما تتأكد إن كل حاجة شغالة
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: "✅ Reminder Saved!",
+            body: `Daily reminder set for "${name}" at ${formatTime(notifyTime)}`,
+            sound: true,
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: 5,
+            channelId: "medication",
+          },
+        });
 
-      await insertMedication({
-        name: name.trim(),
-        description: description.trim(),
-        imageUri: imageUri || "",
-        notifyTime: tStr,
-        notifId,
-      });
+        await insertMedication({
+          name: name.trim(),
+          description: description.trim(),
+          imageUri: imageUri || "",
+          notifyTime: tStr,
+          notifId,
+        });
+        
+        Alert.alert(
+          "✅ Saved!",
+          `${name} added successfully!\nReminder set for ${formatTime(notifyTime)}.`,
+        );
+      }
 
       await loadMedications();
 
@@ -157,18 +253,13 @@ export default function AddMedicationScreen() {
       setName("");
       setDescription("");
       setImageUri(null);
-      setNotifyTime(new Date());
+      setNotifyTime(getDefaultTime());
 
       // Navigate to medications list
-      router.push("/(tabs)/");
-
-      Alert.alert(
-        "✅ Saved!",
-        `${name} added successfully!\nReminder set for ${formatTime(notifyTime)}.`,
-      );
+      router.push("/(tabs)");
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Failed to save medication. Please try again.");
+      Alert.alert("Error", `Failed to ${isEditMode ? 'update' : 'save'} medication. Please try again.`);
     } finally {
       setSaving(false);
     }
@@ -278,7 +369,9 @@ export default function AddMedicationScreen() {
               color="#fff"
               style={{ marginRight: 8 }}
             />
-            <Text style={styles.saveBtnText}>Save Medication</Text>
+            <Text style={styles.saveBtnText}>
+              {isEditMode ? "Update Medication" : "Save Medication"}
+            </Text>
           </>
         )}
       </TouchableOpacity>

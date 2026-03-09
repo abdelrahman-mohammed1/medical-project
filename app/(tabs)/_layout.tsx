@@ -25,6 +25,7 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: "Add Medication",
+          href: "/explore",
           tabBarIcon: ({ color }) => (
             <Ionicons name="add-circle" size={24} color={color} />
           ),
