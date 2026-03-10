@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MedicationApp",
-    "slug": "MedicationApp",
+    "slug": "abdelrahman-mohamed-mohamed",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app_icon_1773011981123.png",
@@ -58,8 +58,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "edf32320-72b1-480d-9e50-e39bf6b198a4"
+        "projectId": "703d9c0c-c635-463b-b6eb-f4b3253366a9"
       }
-    }
+    },
+    "owner": "abdelrahmanmohamedmohamedahmed"
   }
 }

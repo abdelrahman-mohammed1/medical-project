@@ -8,8 +8,8 @@ export default function TabLayout() {
         tabBarActiveTintColor: "#4F8EF7",
         tabBarStyle: { backgroundColor: "#0F1B2D" },
         headerStyle: { backgroundColor: "#0F1B2D" },
-        headerTintColor: "#fff" , 
-        headerShown:true
+        headerTintColor: "#fff",
+        headerShown: true,
       }}
     >
       <Tabs.Screen
@@ -37,6 +37,15 @@ export default function TabLayout() {
           title: "My Reminders",
           tabBarIcon: ({ color }) => (
             <Ionicons name="alarm" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="medication-detail"
+        options={{
+          title: "Medication Details",
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="medical" size={24} color={color} />
           ),
         }}
       />

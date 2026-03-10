@@ -1,5 +1,7 @@
+// app/(tabs)/reminders.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,6 +10,7 @@ import {
   Image,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { getMedicationsWithReminders } from "../../database/db";
@@ -22,6 +25,7 @@ interface Medication {
   image_uri: string;
   reminder_time: string;
   note: string;
+  is_default?: number;
 }
 
 export default function RemindersScreen() {
@@ -40,7 +44,6 @@ export default function RemindersScreen() {
     }
   }, []);
 
-  // Reload every time the tab is focused (e.g. after setting a new reminder)
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
@@ -55,6 +58,24 @@ export default function RemindersScreen() {
     const ampm = hour >= 12 ? "PM" : "AM";
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const handleViewDetail = (item: Medication) => {
+    router.push({
+      pathname: "/(tabs)/medication-detail",
+      params: {
+        brandName: item.brand_name,
+        genericName: item.generic_name || "",
+        drugClass: item.drug_class || "",
+        dose: item.dose || "",
+        form: item.form || "",
+        note: item.note || "",
+        imageUri:
+          item.image_uri && item.image_uri.trim() !== "" ? item.image_uri : "",
+        reminderTime: item.reminder_time || "",
+        isDefault: item.is_default?.toString() || "0",
+      },
+    });
   };
 
   const renderMedicationItem = ({ item }: { item: Medication }) => {
@@ -93,6 +114,15 @@ export default function RemindersScreen() {
             </Text>
           </View>
         </View>
+
+        {/* 👁️ Eye icon — view details */}
+        <TouchableOpacity
+          style={styles.eyeBtn}
+          onPress={() => handleViewDetail(item)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="eye-outline" size={20} color="#63B3ED" />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -143,10 +173,7 @@ export default function RemindersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0A1628",
-  },
+  container: { flex: 1, backgroundColor: "#0A1628" },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -187,20 +214,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#1E2A3A",
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 26,
-    fontWeight: "700",
-  },
+  headerTitle: { color: "#fff", fontSize: 26, fontWeight: "700" },
   headerSubtitle: {
     color: "#4F8EF7",
     fontSize: 14,
     marginTop: 4,
     fontWeight: "600",
   },
-  listContainer: {
-    padding: 16,
-  },
+  listContainer: { padding: 16 },
+
   medicationCard: {
     backgroundColor: "#1A2740",
     borderRadius: 14,
@@ -218,36 +240,23 @@ const styles = StyleSheet.create({
     marginRight: 14,
     backgroundColor: "#0A1628",
   },
-  medicationInfo: {
-    flex: 1,
-  },
+  medicationInfo: { flex: 1 },
   brandName: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 3,
   },
-  genericName: {
-    color: "#4F8EF7",
-    fontSize: 13,
-    marginBottom: 3,
-  },
-  drugClass: {
-    color: "#8E9BAE",
-    fontSize: 12,
-    marginBottom: 3,
-  },
-  dose: {
-    color: "#A0AEC0",
-    fontSize: 12,
-    marginBottom: 6,
-  },
+  genericName: { color: "#4F8EF7", fontSize: 13, marginBottom: 3 },
+  drugClass: { color: "#8E9BAE", fontSize: 12, marginBottom: 3 },
+  dose: { color: "#A0AEC0", fontSize: 12, marginBottom: 6 },
   note: {
     color: "#F6AD55",
     fontSize: 12,
     fontStyle: "italic",
     marginBottom: 8,
   },
+
   reminderInfo: {
     flexDirection: "row",
     alignItems: "center",
@@ -260,9 +269,15 @@ const styles = StyleSheet.create({
     borderColor: "#1E3A6E",
     gap: 5,
   },
-  reminderTime: {
-    color: "#4F8EF7",
-    fontSize: 13,
-    fontWeight: "700",
+  reminderTime: { color: "#4F8EF7", fontSize: 13, fontWeight: "700" },
+
+  // 👁️ Eye button
+  eyeBtn: {
+    padding: 8,
+    marginLeft: 6,
+    backgroundColor: "#0D1E35",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#1E3A6E",
   },
 });
