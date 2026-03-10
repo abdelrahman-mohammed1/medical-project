@@ -1,50 +1,131 @@
-# Welcome to your Expo app 👋
+# My Medications App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A comprehensive medication management app built with React Native and Expo, designed to help users track their medications, set reminders, and manage their health effectively.
 
-## Get started
+## 🏠 Home Page
 
-1. Install dependencies
+![Home Page](./photo.jpeg)
 
-   ```bash
-   npm install
-   ```
+_The home page displays all your medications in a clean, organized interface with quick access to search and medication details._
 
-2. Start the app
+## ✨ Features
 
-   ```bash
-   npx expo start
-   ```
+- **📋 Medication Management**: Add, edit, and delete medications with detailed information
+- **⏰ Smart Reminders**: Set customizable reminders for medication intake
+- **🔍 Quick Search**: Find medications quickly with the built-in search functionality
+- **📱 Beautiful UI**: Modern, intuitive interface with smooth animations
+- **💾 Local Storage**: All data stored locally on your device for privacy
+- **🎨 Dark Theme**: Easy on the eyes dark blue theme design
 
-In the output, you'll find options to open the app in a
+## 🛠 Tech Stack
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **React Native** - Cross-platform mobile development
+- **Expo** - Development platform and toolchain
+- **TypeScript** - Type-safe JavaScript
+- **Expo Router** - File-based routing
+- **SQLite** - Local database storage
+- **Expo Notifications** - Push notifications for reminders
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📱 Screens
 
-## Get a fresh project
+- **My Medications**: Home screen showing all medications
+- **Add Medication**: Form to add new medications
+- **Medication Details**: Detailed view of individual medications
+- **My Reminders**: Manage and view all medication reminders
 
-When you're ready, run:
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo Go app on your device (for testing)
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-npm run reset-project
+git clone <repository-url>
+cd medical-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies:
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Start the development server:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm start
+```
 
-## Join the community
+4. Scan the QR code with Expo Go app on your device
 
-Join our community of developers creating universal apps.
+### Available Scripts
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `npm start` - Start the development server
+- `npm run android` - Run on Android device/emulator
+- `npm run ios` - Run on iOS device/simulator
+- `npm run web` - Run in web browser
+- `npm run lint` - Run ESLint
+
+## 📁 Project Structure
+
+```
+medical-project/
+├── app/                    # App screens and routing
+│   ├── (tabs)/            # Tab navigation screens
+│   └── _layout.tsx        # Root layout
+├── components/            # Reusable UI components
+├── constants/             # App constants and configurations
+├── context/              # React context providers
+├── database/             # Database configuration and queries
+├── hooks/                # Custom React hooks
+├── services/             # API and external services
+└── assets/               # Static assets
+```
+
+## 🎯 Key Components
+
+- **TabLayout**: Main navigation with bottom tabs
+- **MedicationList**: Displays all medications
+- **MedicationForm**: Add/edit medication form
+- **ReminderManager**: Handles medication reminders
+- **SearchBar**: Quick medication search functionality
+
+## 🔧 Configuration
+
+The app uses Expo configuration files:
+
+- `app.json` - Main Expo configuration
+- `eas.json` - Expo Application Services configuration
+- `tsconfig.json` - TypeScript configuration
+
+## 📱 Platform Support
+
+- ✅ iOS
+- ✅ Android
+- ✅ Web (limited functionality)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Support
+
+For support and questions, please open an issue in the repository.
+
+---
+
+Built with ❤️ using React Native and Expo
