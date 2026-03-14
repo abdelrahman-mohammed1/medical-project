@@ -13,15 +13,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useLanguage } from "../../context/LanguageContext";
+import { useThemeMode } from "../../context/ThemeContext";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const formatTime = (timeStr?: string | null) => {
+const formatTime = (timeStr?: string | null, language: "en" | "ar" = "en") => {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
+  const ampmEn = h >= 12 ? "PM" : "AM";
+  const ampmAr = h >= 12 ? "م" : "ص";
   const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  const suffix = language === "ar" ? ampmAr : ampmEn;
+  return `${hour}:${m.toString().padStart(2, "0")} ${suffix}`;
 };
 
 // Class → color mapping
@@ -57,6 +61,33 @@ const CLASS_COLORS: Record<string, string> = {
 const getClassColor = (cls: string) =>
   CLASS_COLORS[cls] || CLASS_COLORS["default"];
 
+const STRINGS = {
+  en: {
+    back: "Back",
+    formularyDrug: "Formulary Drug",
+    drugInformation: "Drug Information",
+    dose: "Dose",
+    form: "Form",
+    drugClass: "Drug Class",
+    notes: "Notes",
+    reminderSection: "Reminder",
+    dailyReminder: "Daily Reminder",
+    noDetails: "No additional details available.",
+  },
+  ar: {
+    back: "رجوع",
+    formularyDrug: "دواء من القائمة الأساسية",
+    drugInformation: "معلومات الدواء",
+    dose: "الجرعة",
+    form: "الهيئة الدوائية",
+    drugClass: "الفئة الدوائية",
+    notes: "ملاحظات",
+    reminderSection: "التذكير",
+    dailyReminder: "تذكير يومي",
+    noDetails: "لا توجد تفاصيل إضافية.",
+  },
+} as const;
+
 // ── Info Row Component ────────────────────────────────────────────────────────
 
 type InfoRowProps = {
@@ -74,6 +105,8 @@ const InfoRow = ({
   accent = "#4F8EF7",
   delay = 0,
 }: InfoRowProps) => {
+  const { mode } = useThemeMode();
+  const isDark = mode === "dark";
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
 
@@ -105,8 +138,14 @@ const InfoRow = ({
         <Ionicons name={icon} size={18} color={accent} />
       </View>
       <View style={styles.infoContent}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={[
+          styles.infoLabel,
+          { color: isDark ? "#8E9BAE" : "#6B7280" }
+        ]}>{label}</Text>
+        <Text style={[
+          styles.infoValue,
+          { color: isDark ? "#E2E8F0" : "#111827" }
+        ]}>{value}</Text>
       </View>
     </Animated.View>
   );
@@ -116,6 +155,10 @@ const InfoRow = ({
 
 export default function MedicationDetailScreen() {
   const params = useLocalSearchParams();
+  const { language } = useLanguage();
+  const { mode } = useThemeMode();
+  const isDark = mode === "dark";
+  const t = STRINGS[language];
 
   // Params passed via router.push
   const brandName = (params.brandName as string) || "Medication";
@@ -128,8 +171,21 @@ export default function MedicationDetailScreen() {
   const reminderTime = (params.reminderTime as string) || "";
   const isDefault = params.isDefault === "1";
 
-  const formattedTime = formatTime(reminderTime);
-  const classColor = getClassColor(drugClass);
+  // Get localized medication data
+  const { getLocalizedMedication, getFormularyTranslation } = require("../../constants/formularyTranslations");
+  const medicationData = {
+    brand: brandName,
+    generic: genericName,
+    cls: drugClass,
+    dose: dose,
+    form: form,
+    image: imageUri,
+  };
+  
+  const localizedMed = getLocalizedMedication(medicationData, language);
+  const formularyTr = isDefault ? getFormularyTranslation(brandName) : null;
+  const formattedTime = formatTime(reminderTime, language);
+  const classColor = getClassColor(localizedMed.cls);
 
   // ── Animations ─────────────────────────────────────────────────────────────
   const heroScale = useRef(new Animated.Value(0.8)).current;
@@ -185,12 +241,24 @@ export default function MedicationDetailScreen() {
   const hasImage = imageUri && imageUri.trim() !== "" && imageUri !== "null";
 
   return (
-    <View style={styles.screen}>
-      <StatusBar barStyle="light-content" />
+    <View
+      style={[
+        styles.screen,
+        { backgroundColor: isDark ? "#0A1628" : "#F9FAFB" },
+      ]}
+    >
+      <StatusBar 
+        barStyle={isDark ? "light-content" : "light-content"} 
+        backgroundColor={isDark ? "#0A1628" : "#000000"}
+      />
 
       {/* ── Hero gradient background ── */}
       <LinearGradient
-        colors={["#0A1628", "#0D2045", "#0A1628"]}
+        colors={
+          isDark
+            ? ["#0A1628", "#0D2045", "#0A1628"]
+            : ["#EFF6FF", "#DBEAFE", "#EFF6FF"]
+        }
         style={StyleSheet.absoluteFill}
         start={{ x: 0.3, y: 0 }}
         end={{ x: 0.7, y: 1 }}
@@ -202,17 +270,37 @@ export default function MedicationDetailScreen() {
 
       {/* ── Back button ── */}
       <TouchableOpacity
-        style={styles.backBtn}
+        style={[
+          styles.backBtn,
+          {
+            backgroundColor: isDark ? "#1A2740CC" : "#E5E7EBCC",
+            borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+          },
+        ]}
         onPress={() => router.back()}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="chevron-back" size={22} color="#fff" />
-        <Text style={styles.backText}>Back</Text>
+        <Ionicons
+          name="chevron-back"
+          size={22}
+          color={isDark ? "#FFFFFF" : "#111827"}
+        />
+        <Text
+          style={[
+            styles.backText,
+            { color: isDark ? "#FFFFFF" : "#111827" },
+          ]}
+        >
+          {t.back}
+        </Text>
       </TouchableOpacity>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Platform.OS === "ios" ? 40 : 48 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Hero image ── */}
@@ -240,9 +328,24 @@ export default function MedicationDetailScreen() {
 
           {/* Formulary badge */}
           {isDefault && (
-            <View style={styles.formularyBadge}>
+            <View
+              style={[
+                styles.formularyBadge,
+                {
+                  backgroundColor: isDark ? "#0E2044" : "#E0F2FE",
+                  borderColor: isDark ? "#1E3A6E" : "#93C5FD",
+                },
+              ]}
+            >
               <Ionicons name="shield-checkmark" size={12} color="#4F8EF7" />
-              <Text style={styles.formularyText}>Formulary Drug</Text>
+              <Text
+                style={[
+                  styles.formularyText,
+                  { color: isDark ? "#4F8EF7" : "#1D4ED8" },
+                ]}
+              >
+                {t.formularyDrug}
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -257,9 +360,27 @@ export default function MedicationDetailScreen() {
             },
           ]}
         >
-          <Text style={styles.brandName}>{brandName}</Text>
+          <Text
+            style={[
+              styles.brandName,
+              { color: isDark ? "#FFFFFF" : "#111827" },
+            ]}
+          >
+            {language === "ar" && formularyTr?.brandAr
+              ? formularyTr.brandAr
+              : brandName}
+          </Text>
           {genericName ? (
-            <Text style={styles.genericName}>{genericName}</Text>
+            <Text
+              style={[
+                styles.genericName,
+                { color: isDark ? "#8E9BAE" : "#4B5563" },
+              ]}
+            >
+              {language === "ar" && formularyTr?.genericAr
+                ? formularyTr.genericAr
+                : genericName}
+            </Text>
           ) : null}
 
           {/* Class chip */}
@@ -277,7 +398,9 @@ export default function MedicationDetailScreen() {
                 style={[styles.classDot, { backgroundColor: classColor }]}
               />
               <Text style={[styles.classText, { color: classColor }]}>
-                {drugClass}
+                {language === "ar" && formularyTr?.clsAr
+                  ? formularyTr.clsAr
+                  : drugClass}
               </Text>
             </View>
           ) : null}
@@ -290,23 +413,35 @@ export default function MedicationDetailScreen() {
             {
               opacity: cardOpacity,
               transform: [{ translateY: cardSlide }],
+              backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+              borderColor: isDark ? "#2D3E55" : "#E5E7EB",
             },
           ]}
         >
-          <Text style={styles.cardSectionTitle}>
+          <Text
+            style={[
+              styles.cardSectionTitle,
+              { color: isDark ? "#8E9BAE" : "#4B5563" },
+            ]}
+          >
             <Ionicons
               name="information-circle-outline"
               size={14}
-              color="#8E9BAE"
+              color={isDark ? "#8E9BAE" : "#6B7280"}
             />
-            {"  "}Drug Information
+            {"  "}
+            {t.drugInformation}
           </Text>
 
           {dose ? (
             <InfoRow
               icon="medical-outline"
-              label="Dose"
-              value={dose}
+              label={t.dose}
+              value={
+                language === "ar" && formularyTr?.doseAr
+                  ? formularyTr.doseAr
+                  : dose
+              }
               accent="#F6AD55"
               delay={0}
             />
@@ -315,7 +450,7 @@ export default function MedicationDetailScreen() {
           {form ? (
             <InfoRow
               icon="flask-outline"
-              label="Form"
+              label={t.form}
               value={form}
               accent="#68D391"
               delay={60}
@@ -325,7 +460,7 @@ export default function MedicationDetailScreen() {
           {drugClass ? (
             <InfoRow
               icon="layers-outline"
-              label="Drug Class"
+              label={t.drugClass}
               value={drugClass}
               accent={classColor}
               delay={120}
@@ -335,7 +470,7 @@ export default function MedicationDetailScreen() {
           {note ? (
             <InfoRow
               icon="document-text-outline"
-              label="Notes"
+              label={t.notes}
               value={note}
               accent="#B794F4"
               delay={180}
@@ -345,14 +480,27 @@ export default function MedicationDetailScreen() {
           {/* Divider */}
           {formattedTime ? (
             <>
-              <View style={styles.divider} />
-              <Text style={styles.cardSectionTitle}>
-                <Ionicons name="alarm-outline" size={14} color="#8E9BAE" />
-                {"  "}Reminder
+              <View style={[
+                styles.divider,
+                { backgroundColor: isDark ? "#2D3E55" : "#E5E7EB" }
+              ]} />
+              <Text
+                style={[
+                  styles.cardSectionTitle,
+                  { color: isDark ? "#8E9BAE" : "#4B5563" },
+                ]}
+              >
+                <Ionicons
+                  name="alarm-outline"
+                  size={14}
+                  color={isDark ? "#8E9BAE" : "#6B7280"}
+                />
+                {"  "}
+                {t.reminderSection}
               </Text>
               <InfoRow
                 icon="alarm"
-                label="Daily Reminder"
+                label={t.dailyReminder}
                 value={formattedTime}
                 accent="#4F8EF7"
                 delay={240}
@@ -366,10 +514,15 @@ export default function MedicationDetailScreen() {
               <Ionicons
                 name="information-circle-outline"
                 size={32}
-                color="#2D3E55"
+                color={isDark ? "#2D3E55" : "#9CA3AF"}
               />
-              <Text style={styles.noDetailsText}>
-                No additional details available.
+              <Text
+                style={[
+                  styles.noDetailsText,
+                  { color: isDark ? "#4A5568" : "#9CA3AF" },
+                ]}
+              >
+                {t.noDetails}
               </Text>
             </View>
           ) : null}
@@ -501,11 +654,9 @@ const styles = StyleSheet.create({
 
   // ── Details card ──
   detailCard: {
-    backgroundColor: "#1A2740",
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#2D3E55",
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -513,7 +664,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
   },
   cardSectionTitle: {
-    color: "#8E9BAE",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -522,7 +672,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#2D3E55",
     marginVertical: 18,
   },
 
@@ -543,7 +692,6 @@ const styles = StyleSheet.create({
   },
   infoContent: { flex: 1 },
   infoLabel: {
-    color: "#8E9BAE",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -551,7 +699,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   infoValue: {
-    color: "#E2E8F0",
     fontSize: 15,
     fontWeight: "600",
     lineHeight: 21,
@@ -559,5 +706,5 @@ const styles = StyleSheet.create({
 
   // ── No details ──
   noDetails: { alignItems: "center", paddingVertical: 24 },
-  noDetailsText: { color: "#4A5568", fontSize: 14, marginTop: 10 },
+  noDetailsText: { fontSize: 14, marginTop: 10 },
 });

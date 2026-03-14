@@ -11,13 +11,16 @@ import {
   Image,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useMedications } from "../../context/DatabaseContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { useThemeMode } from "../../context/ThemeContext";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -46,20 +49,138 @@ const formatTime = (date: Date): string =>
     hour12: true,
   });
 
-const FORM_OPTIONS = [
-  "Tablet",
-  "Capsule",
-  "Injection",
-  "Syrup",
-  "Drops",
-  "Other",
-];
+const STRINGS = {
+  en: {
+    permissionRequiredTitle: "Permission Required",
+    permissionRequiredBody:
+      "Enable notifications in Settings to receive medication reminders.",
+    permissionNeededTitle: "Permission needed",
+    permissionPhotos: "Please allow access to your photo library.",
+    permissionCamera: "Please allow camera access.",
+    addImageTitle: "Add Image",
+    addImageBody: "Choose an option",
+    takePhoto: "Take Photo",
+    chooseFromLibrary: "Choose from Library",
+    cancel: "Cancel",
+    noChangeTitle: "No Change",
+    noChangeBody: "Please pick a new image first.",
+    imageUpdatedTitle: "✅ Image Updated",
+    imageUpdatedBody: "The medication image has been saved.",
+    imageErrorTitle: "Error",
+    imageErrorBody: "Failed to update image. Please try again.",
+    reminderSetTitle: "✅ Reminder Set",
+    reminderSetBodyPrefix: "Daily reminder set for ",
+    reminderErrorTitle: "Error",
+    reminderErrorBody: "Failed to set reminder. Please try again.",
+    validationTitle: "Validation",
+    validationBrand: "Please enter a Brand Name.",
+    updatedTitle: "✅ Updated!",
+    updatedBodySuffix: " updated successfully.",
+    savedTitle: "✅ Saved!",
+    savedBodySuffix: " added successfully.",
+    saveErrorTitle: "Error",
+    saveErrorBodyUpdate:
+      "Failed to update medication. Please try again.",
+    saveErrorBodySave: "Failed to save medication. Please try again.",
+    formularyBanner:
+      "Formulary Drug — you can update the image and/or set a daily reminder independently.",
+    medicationImage: "Medication Image",
+    saveImage: "Save Image",
+    dailyReminder: "Daily Reminder",
+    setReminder: "Set Reminder",
+    screenTitleReminder: "Formulary Drug",
+    screenTitleEdit: "Edit Medication",
+    screenTitleAdd: "Add Medication",
+    brandLabel: "Brand Name *",
+    brandPlaceholder: "e.g. Norvasc",
+    genericLabel: "Generic Name",
+    genericPlaceholder: "e.g. Amlodipine",
+    noteLabel: "Note",
+    notePlaceholder: "Usage instructions, dosage notes...",
+    classLabel: "Class",
+    classPlaceholder: "e.g. Calcium channel blocker",
+    doseLabel: "Dose",
+    dosePlaceholder: "e.g. 10 mg daily",
+    formLabel: "Form",
+    reminderTimeLabel: "Reminder Time",
+    updateMedication: "Update Medication",
+    saveMedication: "Save Medication",
+    done: "Done",
+    formOptions: ["Tablet", "Capsule", "Injection", "Syrup", "Drops", "Other"],
+  },
+  ar: {
+    permissionRequiredTitle: "مطلوب صلاحية",
+    permissionRequiredBody:
+      "فعّل الإشعارات من الإعدادات علشان تستقبل تذكير بالأدوية.",
+    permissionNeededTitle: "بحاجة لصلاحية",
+    permissionPhotos: "من فضلك اسمح للتطبيق بالوصول للصور.",
+    permissionCamera: "من فضلك اسمح للتطبيق باستخدام الكاميرا.",
+    addImageTitle: "إضافة صورة",
+    addImageBody: "اختر خيارًا",
+    takePhoto: "التقاط صورة",
+    chooseFromLibrary: "اختيار من المعرض",
+    cancel: "إلغاء",
+    noChangeTitle: "لا يوجد تغيير",
+    noChangeBody: "من فضلك اختر صورة جديدة أولًا.",
+    imageUpdatedTitle: "✅ تم تحديث الصورة",
+    imageUpdatedBody: "تم حفظ صورة الدواء بنجاح.",
+    imageErrorTitle: "خطأ",
+    imageErrorBody: "فشل في تحديث الصورة، حاول مرة أخرى.",
+    reminderSetTitle: "✅ تم ضبط التذكير",
+    reminderSetBodyPrefix: "تم تعيين تذكير يومي في ",
+    reminderErrorTitle: "خطأ",
+    reminderErrorBody: "فشل في ضبط التذكير، حاول مرة أخرى.",
+    validationTitle: "تحقق من البيانات",
+    validationBrand: "من فضلك أدخل اسم الدواء (البراند).",
+    updatedTitle: "✅ تم التحديث!",
+    updatedBodySuffix: " تم تحديثه بنجاح.",
+    savedTitle: "✅ تم الحفظ!",
+    savedBodySuffix: " تم إضافته بنجاح.",
+    saveErrorTitle: "خطأ",
+    saveErrorBodyUpdate:
+      "فشل في تحديث بيانات الدواء، حاول مرة أخرى.",
+    saveErrorBodySave: "فشل في حفظ بيانات الدواء، حاول مرة أخرى.",
+    formularyBanner:
+      "دواء من القائمة الأساسية — يمكنك تعديل الصورة أو تعيين تذكير يومي بشكل مستقل.",
+    medicationImage: "صورة الدواء",
+    saveImage: "حفظ الصورة",
+    dailyReminder: "تذكير يومي",
+    setReminder: "تعيين تذكير",
+    screenTitleReminder: "دواء من القائمة الأساسية",
+    screenTitleEdit: "تعديل دواء",
+    screenTitleAdd: "إضافة دواء",
+    brandLabel: "اسم الدواء *",
+    brandPlaceholder: "مثال: Norvasc",
+    genericLabel: "الاسم العلمي",
+    genericPlaceholder: "مثال: Amlodipine",
+    noteLabel: "ملاحظة",
+    notePlaceholder: "تعليمات الاستخدام، ملاحظات الجرعة...",
+    classLabel: "الفئة",
+    classPlaceholder: "مثال: Calcium channel blocker",
+    doseLabel: "الجرعة",
+    dosePlaceholder: "مثال: 10 mg يوميًا",
+    formLabel: "الهيئة الدوائية",
+    reminderTimeLabel: "وقت التذكير",
+    updateMedication: "تحديث الدواء",
+    saveMedication: "حفظ الدواء",
+    done: "تم",
+    formOptions: ["قرص", "كبسولة", "حقنة", "شراب", "قطرات", "أخرى"],
+  },
+} as const;
+
+const FORM_OPTIONS_EN = STRINGS.en.formOptions;
+const FORM_OPTIONS_AR = STRINGS.ar.formOptions;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AddMedicationScreen() {
   const { addMedication, editMedication, addReminder, updateImage } =
     useMedications() as any;
+  const { language } = useLanguage();
+  const { mode } = useThemeMode();
+  const isDark = mode === "dark";
+  const t = STRINGS[language];
+  const formOptions = language === "ar" ? FORM_OPTIONS_AR : FORM_OPTIONS_EN;
   const params = useLocalSearchParams();
 
   // Mode flags
@@ -118,11 +239,13 @@ export default function AddMedicationScreen() {
     Notifications.requestPermissionsAsync().then(({ status }) => {
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required",
-          "Enable notifications in Settings to receive medication reminders.",
+          t.permissionRequiredTitle,
+          t.permissionRequiredBody,
         );
       }
     });
+    // we intentionally omit `t` from deps to avoid re-requesting permissions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Image picker ─────────────────────────────────────────────────────────────
@@ -130,8 +253,8 @@ export default function AddMedicationScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Permission needed",
-        "Please allow access to your photo library.",
+        t.permissionNeededTitle,
+        t.permissionPhotos,
       );
       return;
     }
@@ -148,7 +271,7 @@ export default function AddMedicationScreen() {
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow camera access.");
+      Alert.alert(t.permissionNeededTitle, t.permissionCamera);
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -161,10 +284,10 @@ export default function AddMedicationScreen() {
   };
 
   const handleImagePress = () =>
-    Alert.alert("Add Image", "Choose an option", [
-      { text: "Take Photo", onPress: takePhoto },
-      { text: "Choose from Library", onPress: pickImage },
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t.addImageTitle, t.addImageBody, [
+      { text: t.takePhoto, onPress: takePhoto },
+      { text: t.chooseFromLibrary, onPress: pickImage },
+      { text: t.cancel, style: "cancel" },
     ]);
 
   // ── Save image only (formulary drugs) ────────────────────────────────────────
@@ -173,7 +296,7 @@ export default function AddMedicationScreen() {
 
     const originalImg = params.imageUri as string;
     if (imageUri === originalImg || imageUri === "null") {
-      Alert.alert("No Change", "Please pick a new image first.");
+      Alert.alert(t.noChangeTitle, t.noChangeBody);
       return;
     }
 
@@ -182,9 +305,9 @@ export default function AddMedicationScreen() {
     setSavingImage(false);
 
     if (ok) {
-      Alert.alert("✅ Image Updated", "The medication image has been saved.");
+      Alert.alert(t.imageUpdatedTitle, t.imageUpdatedBody);
     } else {
-      Alert.alert("Error", "Failed to update image. Please try again.");
+      Alert.alert(t.imageErrorTitle, t.imageErrorBody);
     }
   };
 
@@ -203,8 +326,8 @@ export default function AddMedicationScreen() {
 
     if (ok) {
       Alert.alert(
-        "✅ Reminder Set",
-        `Daily reminder set for ${formatTime(notifyTime)}.`,
+        t.reminderSetTitle,
+        `${t.reminderSetBodyPrefix}${formatTime(notifyTime)}.`,
       );
       router.push("/(tabs)");
     } else {
@@ -215,7 +338,7 @@ export default function AddMedicationScreen() {
   // ── Save (add / edit regular medications) ────────────────────────────────────
   const handleSave = async () => {
     if (!brandName.trim()) {
-      Alert.alert("Validation", "Please enter a Brand Name.");
+      Alert.alert(t.validationTitle, t.validationBrand);
       return;
     }
 
@@ -237,11 +360,12 @@ export default function AddMedicationScreen() {
       if (isEditMode && medicationId) {
         ok = await editMedication(medicationId, fields);
         if (ok)
-          Alert.alert("✅ Updated!", `${brandName} updated successfully.`);
+          Alert.alert(t.updatedTitle, `${brandName}${t.updatedBodySuffix}`);
         else throw new Error("Update returned 0 changes");
       } else {
         ok = await addMedication(fields);
-        if (ok) Alert.alert("✅ Saved!", `${brandName} added successfully.`);
+        if (ok)
+          Alert.alert(t.savedTitle, `${brandName}${t.savedBodySuffix}`);
         else throw new Error("Insert failed");
       }
 
@@ -257,8 +381,8 @@ export default function AddMedicationScreen() {
     } catch (err) {
       console.error(err);
       Alert.alert(
-        "Error",
-        `Failed to ${isEditMode ? "update" : "save"} medication. Please try again.`,
+        t.saveErrorTitle,
+        isEditMode ? t.saveErrorBodyUpdate : t.saveErrorBodySave,
       );
     } finally {
       setSaving(false);
@@ -267,18 +391,36 @@ export default function AddMedicationScreen() {
 
   // ── UI ────────────────────────────────────────────────────────────────────────
   const screenTitle = isReminderOnly
-    ? (params.brandName as string) || "Formulary Drug"
+    ? (params.brandName as string) || t.screenTitleReminder
     : isEditMode
-      ? "Edit Medication"
-      : "Add Medication";
+      ? t.screenTitleEdit
+      : t.screenTitleAdd;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.screenTitle}>{screenTitle}</Text>
+    <>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={isDark ? "#0A1628" : "#000000"}
+      />
+      <ScrollView
+        style={[
+          styles.container,
+          { backgroundColor: isDark ? "#0A1628" : "#F9FAFB" },
+        ]}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: Platform.OS === "ios" ? 56 : 64 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+      <Text
+        style={[
+          styles.screenTitle,
+          { color: isDark ? "#FFFFFF" : "#111827" },
+        ]}
+      >
+        {screenTitle}
+      </Text>
 
       {/* ── Reminder-only UI (formulary drugs) ── */}
       {isReminderOnly ? (
@@ -289,17 +431,26 @@ export default function AddMedicationScreen() {
               size={20}
               color="#4F8EF7"
             />
-            <Text style={styles.reminderOnlyText}>
-              Formulary Drug — you can update the image and/or set a daily
-              reminder independently.
+            <Text
+              style={[
+                styles.reminderOnlyText,
+                { color: isDark ? "#8E9BAE" : "#4B5563" },
+              ]}
+            >
+              {t.formularyBanner}
             </Text>
           </View>
 
           {/* ── IMAGE SECTION ── */}
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
               <Ionicons name="image-outline" size={15} color="#A0AEC0" />{" "}
-              Medication Image
+              {t.medicationImage}
             </Text>
 
             <TouchableOpacity
@@ -321,7 +472,11 @@ export default function AddMedicationScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, styles.imageBtn]}
+              style={[
+                styles.actionBtn,
+                styles.imageBtn,
+                { backgroundColor: isDark ? "#2D5A8E" : "#2563EB" },
+              ]}
               onPress={handleSaveImage}
               disabled={savingImage}
               activeOpacity={0.85}
@@ -336,7 +491,7 @@ export default function AddMedicationScreen() {
                     color="#fff"
                     style={{ marginRight: 8 }}
                   />
-                  <Text style={styles.actionBtnText}>Save Image</Text>
+                  <Text style={styles.actionBtnText}>{t.saveImage}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -344,22 +499,44 @@ export default function AddMedicationScreen() {
 
           {/* ── REMINDER SECTION ── */}
           <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="alarm-outline" size={15} color="#A0AEC0" /> Daily
-              Reminder
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              <Ionicons name="alarm-outline" size={15} color="#A0AEC0" />{" "}
+              {t.dailyReminder}
             </Text>
 
             <TouchableOpacity
-              style={styles.timePicker}
+              style={[
+                styles.timePicker,
+                {
+                  backgroundColor: isDark ? "#0A1628" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                },
+              ]}
               onPress={() => setShowPicker(true)}
             >
               <Ionicons name="time-outline" size={22} color="#4F8EF7" />
-              <Text style={styles.timeText}>{formatTime(notifyTime)}</Text>
+              <Text
+                style={[
+                  styles.timeText,
+                  { color: isDark ? "#FFFFFF" : "#111827" },
+                ]}
+              >
+                {formatTime(notifyTime)}
+              </Text>
               <Ionicons name="chevron-forward" size={18} color="#8E9BAE" />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.actionBtn, styles.reminderBtn]}
+              style={[
+                styles.actionBtn,
+                styles.reminderBtn,
+                { backgroundColor: isDark ? "#4F8EF7" : "#16A34A" },
+              ]}
               onPress={handleSaveReminder}
               disabled={savingReminder}
               activeOpacity={0.85}
@@ -374,7 +551,7 @@ export default function AddMedicationScreen() {
                     color="#fff"
                     style={{ marginRight: 8 }}
                   />
-                  <Text style={styles.actionBtnText}>Set Reminder</Text>
+                  <Text style={styles.actionBtnText}>{t.setReminder}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -403,11 +580,25 @@ export default function AddMedicationScreen() {
 
           {/* ── Brand Name ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Brand Name *</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.brandLabel}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="e.g. Norvasc"
-              placeholderTextColor="#4A5568"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                  color: isDark ? "#FFFFFF" : "#111827",
+                },
+              ]}
+              placeholder={t.brandPlaceholder}
+              placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
               value={brandName}
               onChangeText={setBrandName}
             />
@@ -415,11 +606,25 @@ export default function AddMedicationScreen() {
 
           {/* ── Generic Name ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Generic Name</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.genericLabel}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="e.g. Amlodipine"
-              placeholderTextColor="#4A5568"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                  color: isDark ? "#FFFFFF" : "#111827",
+                },
+              ]}
+              placeholder={t.genericPlaceholder}
+              placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
               value={genericName}
               onChangeText={setGenericName}
             />
@@ -427,11 +632,26 @@ export default function AddMedicationScreen() {
 
           {/* ── Note ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Note</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.noteLabel}
+            </Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Usage instructions, dosage notes..."
-              placeholderTextColor="#4A5568"
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                  color: isDark ? "#FFFFFF" : "#111827",
+                },
+              ]}
+              placeholder={t.notePlaceholder}
+              placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
               value={note}
               onChangeText={setNote}
               multiline
@@ -442,11 +662,25 @@ export default function AddMedicationScreen() {
 
           {/* ── Class ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Class</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.classLabel}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="e.g. Calcium channel blocker"
-              placeholderTextColor="#4A5568"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                  color: isDark ? "#FFFFFF" : "#111827",
+                },
+              ]}
+              placeholder={t.classPlaceholder}
+              placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
               value={drugClass}
               onChangeText={setDrugClass}
             />
@@ -454,11 +688,25 @@ export default function AddMedicationScreen() {
 
           {/* ── Dose ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Dose</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.doseLabel}
+            </Text>
             <TextInput
-              style={styles.input}
-              placeholder="e.g. 10 mg daily"
-              placeholderTextColor="#4A5568"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                  color: isDark ? "#FFFFFF" : "#111827",
+                },
+              ]}
+              placeholder={t.dosePlaceholder}
+              placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
               value={dose}
               onChangeText={setDose}
             />
@@ -466,21 +714,39 @@ export default function AddMedicationScreen() {
 
           {/* ── Form ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Form</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.formLabel}
+            </Text>
             <View style={styles.chipRow}>
-              {FORM_OPTIONS.map((opt) => (
+              {formOptions.map((opt) => (
                 <TouchableOpacity
                   key={opt}
                   style={[
                     styles.chip,
-                    selectedForm === opt && styles.chipActive,
+                    {
+                      backgroundColor: selectedForm === opt 
+                        ? "#4F8EF7" 
+                        : isDark ? "#1A2740" : "#F3F4F6",
+                      borderColor: selectedForm === opt 
+                        ? "#4F8EF7" 
+                        : isDark ? "#2D3E55" : "#D1D5DB",
+                    }
                   ]}
                   onPress={() => setSelectedForm(opt)}
                 >
                   <Text
                     style={[
                       styles.chipText,
-                      selectedForm === opt && styles.chipTextActive,
+                      {
+                        color: selectedForm === opt 
+                          ? "#FFFFFF" 
+                          : isDark ? "#8E9BAE" : "#4B5563"
+                      }
                     ]}
                   >
                     {opt}
@@ -492,20 +758,43 @@ export default function AddMedicationScreen() {
 
           {/* ── Reminder Time ── */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Reminder Time</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: isDark ? "#A0AEC0" : "#4B5563" },
+              ]}
+            >
+              {t.reminderTimeLabel}
+            </Text>
             <TouchableOpacity
-              style={styles.timePicker}
+              style={[
+                styles.timePicker,
+                {
+                  backgroundColor: isDark ? "#0A1628" : "#FFFFFF",
+                  borderColor: isDark ? "#2D3E55" : "#D1D5DB",
+                },
+              ]}
               onPress={() => setShowPicker(true)}
             >
               <Ionicons name="time-outline" size={22} color="#4F8EF7" />
-              <Text style={styles.timeText}>{formatTime(notifyTime)}</Text>
+              <Text
+                style={[
+                  styles.timeText,
+                  { color: isDark ? "#FFFFFF" : "#111827" },
+                ]}
+              >
+                {formatTime(notifyTime)}
+              </Text>
               <Ionicons name="chevron-forward" size={18} color="#8E9BAE" />
             </TouchableOpacity>
           </View>
 
           {/* ── Save button ── */}
           <TouchableOpacity
-            style={styles.saveBtn}
+            style={[
+              styles.saveBtn,
+              { backgroundColor: isDark ? "#4F8EF7" : "#2563EB" },
+            ]}
             onPress={handleSave}
             disabled={saving}
             activeOpacity={0.85}
@@ -521,7 +810,7 @@ export default function AddMedicationScreen() {
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.saveBtnText}>
-                  {isEditMode ? "Update Medication" : "Save Medication"}
+                  {isEditMode ? t.updateMedication : t.saveMedication}
                 </Text>
               </>
             )}
@@ -536,7 +825,7 @@ export default function AddMedicationScreen() {
           mode="time"
           is24Hour={false}
           display={Platform.OS === "ios" ? "spinner" : "default"}
-          themeVariant="dark"
+          themeVariant={isDark ? "dark" : "light"}
           onChange={(_, selectedDate) => {
             setShowPicker(Platform.OS === "ios");
             if (selectedDate) setNotifyTime(selectedDate);
@@ -548,10 +837,18 @@ export default function AddMedicationScreen() {
           style={styles.doneBtn}
           onPress={() => setShowPicker(false)}
         >
-          <Text style={styles.doneBtnText}>Done</Text>
+          <Text
+            style={[
+              styles.doneBtnText,
+              { color: isDark ? "#4F8EF7" : "#2563EB" },
+            ]}
+          >
+            {t.done}
+          </Text>
         </TouchableOpacity>
       )}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
@@ -676,12 +973,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#2D3E55",
-    backgroundColor: "#1A2740",
   },
-  chipActive: { backgroundColor: "#4F8EF7", borderColor: "#4F8EF7" },
-  chipText: { color: "#8E9BAE", fontSize: 13, fontWeight: "600" },
-  chipTextActive: { color: "#fff" },
+  chipText: { fontSize: 13, fontWeight: "600" },
 
   doneBtn: {
     alignSelf: "flex-end",

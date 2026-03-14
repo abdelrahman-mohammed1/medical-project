@@ -4,6 +4,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { DatabaseProvider } from "../context/DatabaseContext";
+import { LanguageProvider } from "../context/LanguageContext";
+import { ThemeProvider } from "../context/ThemeContext";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -61,8 +63,12 @@ export default function RootLayout() {
   }
 
   return (
-    <DatabaseProvider>
-      <Stack screenOptions={{ headerShown: false }} />
-    </DatabaseProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <DatabaseProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </DatabaseProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

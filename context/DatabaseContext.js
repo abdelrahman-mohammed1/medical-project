@@ -1,23 +1,23 @@
 // context/DatabaseContext.js
 import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
 } from "react";
 import {
-  deleteMedication,
-  getAllMedications,
-  insertMedication,
-  searchMedications,
-  updateMedication,
-  updateMedicationImage,
-  updateMedicationReminder,
+    deleteMedication,
+    getLocalizedMedications,
+    insertMedication,
+    searchLocalizedMedications,
+    updateMedication,
+    updateMedicationImage,
+    updateMedicationReminder
 } from "../database/db";
 import {
-  cancelMedicationReminder,
-  scheduleMedicationReminder,
+    cancelMedicationReminder,
+    scheduleMedicationReminder,
 } from "../services/notificationService";
 
 const DatabaseContext = createContext(null);
@@ -27,10 +27,10 @@ export const DatabaseProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // ── Load ────────────────────────────────────────────────────────────────────
-  const loadMedications = useCallback(async () => {
+  const loadMedications = useCallback(async (language = "en") => {
     setLoading(true);
     try {
-      const meds = await getAllMedications();
+      const meds = await getLocalizedMedications(language);
       setMedications(meds);
     } catch (error) {
       console.error("Failed to load medications:", error);
@@ -41,13 +41,13 @@ export const DatabaseProvider = ({ children }) => {
 
   // ── Search ──────────────────────────────────────────────────────────────────
   const search = useCallback(
-    async (query) => {
+    async (query, language = "en") => {
       try {
         if (!query.trim()) {
-          await loadMedications();
+          await loadMedications(language);
           return;
         }
-        const results = await searchMedications(query);
+        const results = await searchLocalizedMedications(query, language);
         setMedications(results);
       } catch (error) {
         console.error("Search failed:", error);

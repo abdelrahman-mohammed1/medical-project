@@ -9,23 +9,67 @@ import {
   FlatList,
   Image,
   RefreshControl,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useMedications } from "../../context/DatabaseContext";
+import { useLanguage } from "../../context/LanguageContext";
+import { useThemeMode } from "../../context/ThemeContext";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const formatTime = (timeStr?: string | null) => {
+const formatTime = (timeStr?: string | null, language: "en" | "ar" = "en") => {
   if (!timeStr) return null;
   const [h, m] = timeStr.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
+  const ampmEn = h >= 12 ? "PM" : "AM";
+  const ampmAr = h >= 12 ? "م" : "ص";
   const hour = h % 12 || 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${ampm}`;
+  const suffix = language === "ar" ? ampmAr : ampmEn;
+  return `${hour}:${m.toString().padStart(2, "0")} ${suffix}`;
 };
+
+const STRINGS = {
+  en: {
+    deleteTitle: "Delete Medication",
+    deleteBodyPrefix: 'Remove "',
+    deleteBodySuffix: '" and its reminder?',
+    cancel: "Cancel",
+    delete: "Delete",
+    reminderLabelPrefix: "Reminder: ",
+    reminderLabelSuffix: "  (tap to change)",
+    reminderEmpty: "Set Reminder",
+    emptyNoResults: "No results found",
+    emptyNoMeds: "No medications yet",
+    emptySearchHint: "Try a different search term.",
+    emptyListHint: 'Tap "Add Medication" to get started.',
+    searchPlaceholder: "Search brand or generic name...",
+    countSuffixSingle: " medication",
+    countSuffixPlural: " medications",
+    formularyBadge: "Formulary Drug",
+  },
+  ar: {
+    deleteTitle: "حذف دواء",
+    deleteBodyPrefix: 'هل تريد حذف "',
+    deleteBodySuffix: '" والتذكير الخاص به؟',
+    cancel: "إلغاء",
+    delete: "حذف",
+    reminderLabelPrefix: "تذكير: ",
+    reminderLabelSuffix: "  (اضغط للتعديل)",
+    reminderEmpty: "تعيين تذكير",
+    emptyNoResults: "لا توجد نتائج",
+    emptyNoMeds: "لا توجد أدوية بعد",
+    emptySearchHint: "جرّب كلمة بحث مختلفة.",
+    emptyListHint: 'اضغط "إضافة دواء" للبدء.',
+    searchPlaceholder: "ابحث باسم الدواء أو الاسم العلمي...",
+    countSuffixSingle: " دواء",
+    countSuffixPlural: " أدوية",
+    formularyBadge: "دواء من القائمة الأساسية",
+  },
+} as const;
 
 // ── MedicationCard ────────────────────────────────────────────────────────────
 
@@ -44,18 +88,34 @@ const MedicationCard = React.memo(
     onEdit,
     onSetReminder,
     onViewDetail,
-  }: MedicationCardProps) => {
+    language,
+  }: MedicationCardProps & { language: "en" | "ar" }) => {
+    const { mode } = useThemeMode();
+    const isDark = mode === "dark";
     const isDefault = item.is_default === 1;
-    const formattedTime = formatTime(item.reminder_time);
+    
+    // Get localized medication data
+    const { getLocalizedMedication } = require("../../constants/formularyTranslations");
+    const medicationData = {
+      brand: item.brand_name,
+      generic: item.generic_name,
+      cls: item.drug_class,
+      dose: item.dose,
+      form: item.form,
+      image: item.image_uri,
+    };
+    
+    const localizedMed = getLocalizedMedication(medicationData, language);
+    const formattedTime = formatTime(item.reminder_time, language);
 
     const handleDelete = () => {
       Alert.alert(
-        "Delete Medication",
-        `Remove "${item.brand_name}" and its reminder?`,
+        STRINGS[language].deleteTitle,
+        `${STRINGS[language].deleteBodyPrefix}${item.brand_name}${STRINGS[language].deleteBodySuffix}`,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: STRINGS[language].cancel, style: "cancel" },
           {
-            text: "Delete",
+            text: STRINGS[language].delete,
             style: "destructive",
             onPress: () => onDelete(item.id, item.notif_id),
           },
@@ -64,12 +124,32 @@ const MedicationCard = React.memo(
     };
 
     return (
-      <View style={[styles.card, isDefault && styles.cardDefault]}>
+      <View
+        style={[
+          styles.card,
+          isDefault && styles.cardDefault,
+          {
+            backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+            borderColor: isDark ? "#2D3E55" : "#E5E7EB",
+          },
+        ]}
+      >
         {/* Formulary badge */}
         {isDefault && (
-          <View style={styles.badge}>
+          <View style={[
+            styles.badge,
+            {
+              backgroundColor: isDark ? "#0E2044" : "#EBF4FF",
+              borderColor: isDark ? "#1E3A6E" : "#BFDBFE",
+            }
+          ]}>
             <Ionicons name="shield-checkmark" size={11} color="#4F8EF7" />
-            <Text style={styles.badgeText}>Formulary Drug</Text>
+            <Text style={[
+              styles.badgeText,
+              { color: isDark ? "#4F8EF7" : "#1D4ED8" }
+            ]}>
+              {STRINGS[language].formularyBadge}
+            </Text>
           </View>
         )}
 
@@ -81,45 +161,106 @@ const MedicationCard = React.memo(
                 ? { uri: item.image_uri }
                 : require("../../assets/images/pill-placeholder.png")
             }
-            style={styles.cardImage}
+            style={[
+              styles.cardImage,
+              {
+                backgroundColor: isDark ? "#0A1628" : "#EFF6FF",
+              },
+            ]}
             defaultSource={require("../../assets/images/pill-placeholder.png")}
           />
 
           {/* Info */}
           <View style={styles.cardInfo}>
-            <Text style={styles.cardBrand} numberOfLines={1}>
-              {item.brand_name}
+            <Text
+              style={[
+                styles.cardBrand,
+                { color: isDark ? "#FFFFFF" : "#111827" },
+              ]}
+              numberOfLines={1}
+            >
+              {localizedMed.brand}
             </Text>
-            {item.generic_name ? (
-              <Text style={styles.cardGeneric} numberOfLines={1}>
-                {item.generic_name}
+            {localizedMed.generic ? (
+              <Text
+                style={[
+                  styles.cardGeneric,
+                  { color: isDark ? "#8E9BAE" : "#4B5563" },
+                ]}
+                numberOfLines={1}
+              >
+                {localizedMed.generic}
               </Text>
             ) : null}
 
             <View style={styles.pillRow}>
-              {item.drug_class ? (
-                <View style={styles.pill}>
-                  <Text style={styles.pillText}>{item.drug_class}</Text>
+              {localizedMed.cls ? (
+                <View
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: isDark ? "#0A1628" : "#EFF6FF",
+                      borderColor: isDark ? "#2D3E55" : "#DBEAFE",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: isDark ? "#8E9BAE" : "#1D4ED8" },
+                    ]}
+                  >
+                    {localizedMed.cls}
+                  </Text>
                 </View>
               ) : null}
-              {item.form ? (
-                <View style={[styles.pill, styles.pillForm]}>
-                  <Text style={styles.pillText}>{item.form}</Text>
+              {localizedMed.form ? (
+                <View
+                  style={[
+                    styles.pill,
+                    styles.pillForm,
+                    {
+                      backgroundColor: isDark ? "#0A1628" : "#EFF6FF",
+                      borderColor: isDark ? "#3D5580" : "#BFDBFE",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: isDark ? "#8E9BAE" : "#1D4ED8" },
+                    ]}
+                  >
+                    {localizedMed.form}
+                  </Text>
                 </View>
               ) : null}
             </View>
 
-            {item.dose ? (
-              <Text style={styles.cardDose} numberOfLines={1}>
+            {localizedMed.dose ? (
+              <Text
+                style={[
+                  styles.cardDose,
+                  { color: isDark ? "#8E9BAE" : "#4B5563" },
+                ]}
+                numberOfLines={1}
+              >
                 <Ionicons name="medical-outline" size={12} color="#8E9BAE" />{" "}
-                {item.dose}
+                {localizedMed.dose}
               </Text>
             ) : null}
 
             {formattedTime ? (
               <View style={styles.timeRow}>
                 <Ionicons name="alarm-outline" size={13} color="#4F8EF7" />
-                <Text style={styles.timeText}>{formattedTime}</Text>
+                <Text
+                  style={[
+                    styles.timeText,
+                    { color: isDark ? "#4F8EF7" : "#2563EB" },
+                  ]}
+                >
+                  {formattedTime}
+                </Text>
               </View>
             ) : null}
           </View>
@@ -174,8 +315,8 @@ const MedicationCard = React.memo(
             ]}
           >
             {formattedTime
-              ? `Reminder: ${formattedTime}  (tap to change)`
-              : "Set Reminder"}
+              ? `${STRINGS[language].reminderLabelPrefix}${formattedTime}${STRINGS[language].reminderLabelSuffix}`
+              : STRINGS[language].reminderEmpty}
           </Text>
         </TouchableOpacity>
       </View>
@@ -183,28 +324,34 @@ const MedicationCard = React.memo(
   },
 );
 
+MedicationCard.displayName = "MedicationCard";
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function MedicationsListScreen() {
   const { medications, loading, loadMedications, search, removeMedication } =
     useMedications() as any;
+  const { language } = useLanguage();
+  const { mode } = useThemeMode();
+  const isDark = mode === "dark";
+  const t = STRINGS[language];
   const [query, setQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      if (!query) loadMedications();
-    }, [query, loadMedications]),
+      if (!query) loadMedications(language);
+    }, [query, loadMedications, language]),
   );
 
   const handleSearch = (text: string) => {
     setQuery(text);
-    search(text);
+    search(text, language);
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadMedications();
+    await loadMedications(language);
     setRefreshing(false);
   };
 
@@ -271,30 +418,48 @@ export default function MedicationsListScreen() {
     <View style={styles.emptyState}>
       <Ionicons name="medkit-outline" size={64} color="#2D3E55" />
       <Text style={styles.emptyTitle}>
-        {query ? "No results found" : "No medications yet"}
+        {query ? t.emptyNoResults : t.emptyNoMeds}
       </Text>
       <Text style={styles.emptySubtitle}>
-        {query
-          ? "Try a different search term."
-          : 'Tap "Add Medication" to get started.'}
+        {query ? t.emptySearchHint : t.emptyListHint}
       </Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#0A1628" : "#F9FAFB" },
+      ]}
+    >
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor={isDark ? "#0A1628" : "#000000"}
+      />
       {/* Search bar */}
-      <View style={styles.searchContainer}>
+      <View
+        style={[
+          styles.searchContainer,
+          {
+            backgroundColor: isDark ? "#1A2740" : "#FFFFFF",
+            borderColor: isDark ? "#2D3E55" : "#E5E7EB",
+          },
+        ]}
+      >
         <Ionicons
           name="search"
           size={18}
-          color="#8E9BAE"
+          color={isDark ? "#8E9BAE" : "#9CA3AF"}
           style={styles.searchIcon}
         />
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search brand or generic name..."
-          placeholderTextColor="#4A5568"
+          style={[
+            styles.searchInput,
+            { color: isDark ? "#FFFFFF" : "#111827" },
+          ]}
+          placeholder={t.searchPlaceholder}
+          placeholderTextColor={isDark ? "#4A5568" : "#9CA3AF"}
           value={query}
           onChangeText={handleSearch}
           returnKeyType="search"
@@ -308,8 +473,20 @@ export default function MedicationsListScreen() {
 
       {/* Count */}
       {!loading && medications.length > 0 && (
-        <Text style={styles.countText}>
-          {medications.length} medication{medications.length !== 1 ? "s" : ""}
+        <Text
+          style={[
+            styles.countText,
+            { color: isDark ? "#8E9BAE" : "#4B5563" },
+          ]}
+        >
+          {medications.length}
+          {language === "ar"
+            ? medications.length !== 1
+              ? t.countSuffixPlural
+              : t.countSuffixSingle
+            : medications.length !== 1
+              ? t.countSuffixPlural
+              : t.countSuffixSingle}
         </Text>
       )}
 
@@ -331,6 +508,7 @@ export default function MedicationsListScreen() {
               onEdit={handleEdit}
               onSetReminder={handleSetReminder}
               onViewDetail={handleViewDetail}
+              language={language}
             />
           )}
           ListEmptyComponent={renderEmpty}
@@ -393,16 +571,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     alignSelf: "flex-start",
-    backgroundColor: "#0E2044",
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#1E3A6E",
   },
   badgeText: {
-    color: "#4F8EF7",
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.3,

@@ -469,12 +469,18 @@ export const getAllMedications = async () => {
 };
 
 export const getMedicationsWithReminders = async () => {
-  const database = await getDatabase();
-  return database.getAllAsync(
-    `SELECT * FROM medications 
-     WHERE reminder_time IS NOT NULL AND reminder_time != '' 
-     ORDER BY reminder_time ASC`,
-  );
+  try {
+    const database = await getDatabase();
+    const result = await database.getAllAsync(
+      `SELECT * FROM medications 
+       WHERE reminder_time IS NOT NULL AND reminder_time != '' 
+       ORDER BY reminder_time ASC`,
+    );
+    return result || [];
+  } catch (error) {
+    console.error("Database error in getMedicationsWithReminders:", error);
+    throw error;
+  }
 };
 
 export const insertMedication = async (fields) => {
@@ -557,4 +563,86 @@ export const searchMedications = async (query) => {
      ORDER BY is_default DESC, created_at DESC`,
     [q, q, q],
   );
+};
+
+// Get localized medications based on language
+export const getLocalizedMedications = async (language = "en") => {
+  const medications = await getAllMedications();
+  
+  if (language === "en") {
+    return medications.map(med => ({
+      ...med,
+      brand: med.brand_name,
+      generic: med.generic_name,
+      cls: med.drug_class,
+      dose: med.dose,
+      form: med.form,
+      image: med.image_uri,
+    }));
+  }
+
+  // For Arabic, we need to import the translation function
+  const { getLocalizedMedication } = await import('../constants/formularyTranslations');
+  
+  return medications.map(med => {
+    const medicationData = {
+      brand: med.brand_name,
+      generic: med.generic_name,
+      cls: med.drug_class,
+      dose: med.dose,
+      form: med.form,
+      image: med.image_uri,
+    };
+    
+    const localized = getLocalizedMedication(medicationData, language);
+    
+    return {
+      ...med,
+      ...localized,
+    };
+  });
+};
+
+export const searchLocalizedMedications = async (query, language = "en") => {
+  const database = await getDatabase();
+  const q = `%${query}%`;
+  const medications = await database.getAllAsync(
+    `SELECT * FROM medications 
+     WHERE brand_name LIKE ? OR generic_name LIKE ? OR drug_class LIKE ?
+     ORDER BY is_default DESC, created_at DESC`,
+    [q, q, q],
+  );
+
+  if (language === "en") {
+    return medications.map(med => ({
+      ...med,
+      brand: med.brand_name,
+      generic: med.generic_name,
+      cls: med.drug_class,
+      dose: med.dose,
+      form: med.form,
+      image: med.image_uri,
+    }));
+  }
+
+  // For Arabic, we need to import the translation function
+  const { getLocalizedMedication } = await import('../constants/formularyTranslations');
+  
+  return medications.map(med => {
+    const medicationData = {
+      brand: med.brand_name,
+      generic: med.generic_name,
+      cls: med.drug_class,
+      dose: med.dose,
+      form: med.form,
+      image: med.image_uri,
+    };
+    
+    const localized = getLocalizedMedication(medicationData, language);
+    
+    return {
+      ...med,
+      ...localized,
+    };
+  });
 };
